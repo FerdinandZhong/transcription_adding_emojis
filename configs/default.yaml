@@ -1,0 +1,55 @@
+# Default experiment configuration for Emoji-Augmented Transcription.
+
+seed: 13
+
+emoji_set: default            # see emoji_asr.emoji_set
+
+data:
+  source: synthetic           # synthetic | meld | iemocap | mosei
+  synthetic:
+    n_train: 800
+    n_dev: 200
+    n_test: 400
+    # Fraction of test examples where text is emotion-neutral but the voice is
+    # emotional (the prosody-divergent subset that isolates the value of prosody).
+    divergent_test_fraction: 0.5
+  cache_dir: data/cache
+
+silver_labels:
+  annotator: offline          # offline | openai
+  condition_on_speech: true   # idea (c): condition emoji insertion on detected emotion
+  openai_model: gpt-4o-mini
+
+ser:
+  backend: heuristic          # heuristic | wav2vec2
+  wav2vec2_model: audeering/wav2vec2-large-robust-12-ft-emotion-msp-dim
+
+asr:
+  backend: passthrough        # passthrough | whisper
+  whisper_model: base
+
+model:
+  type: fusion                # fusion | text_only
+  text_encoder:
+    backend: lite             # lite | hf  (use hf for real experiments)
+    hf_model: answerdotai/ModernBERT-base   # latest encoder backbone; needs transformers>=4.48
+    hidden_size: 128          # used by the lite encoder
+    n_layers: 2
+    n_heads: 4
+    max_len: 64
+  prosody_dim: 32             # pooled acoustic feature dim (VAD + embedding)
+  fusion: cross_attention     # cross_attention | concat | none
+  dropout: 0.1
+
+train:
+  epochs: 15
+  batch_size: 16
+  lr: 0.0005
+  weight_decay: 0.01
+  insertion_loss_weight: 1.0
+  emoji_loss_weight: 1.0
+  device: auto                # auto | cpu | cuda | mps
+  out_dir: runs/default
+
+eval:
+  topk: [1, 3]

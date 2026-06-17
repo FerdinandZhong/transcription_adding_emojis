@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Project tooling
+.omc/
+
+# Training / experiment artifacts
+runs/
+outputs/
+checkpoints/
+logs/
+*.pt
+*.ckpt
+*.pth
+wandb/
+
+# Hugging Face / model caches (if downloaded inside repo)
+.cache/
+hf_cache/
+
+# Ephemeral processed data (not the canonical LFS dataset)
+data/raw/
+data/cache/
+data/processed/meld_silver_dryrun/
+data/processed/meld_silver_dryrun_chunked/
+data/processed/meld_silver_openai_smoke/
+data/processed/**/progress.json
+!data/sample/
+
+# Large archives / temp downloads (outside tracked datasets)
+*.zip
+*.tar
+*.tar.gz
+*.tgz

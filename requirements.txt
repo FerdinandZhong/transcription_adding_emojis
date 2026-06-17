@@ -1,0 +1,15 @@
+# Core
+torch>=2.1
+transformers>=4.48      # >=4.48 required for the ModernBERT encoder backbone
+numpy>=1.24
+scikit-learn>=1.3
+pandas>=2.0
+tqdm>=4.66
+pyyaml>=6.0
+
+# Optional (real datasets / pretrained components). The synthetic pipeline and unit
+# tests run without these; install when running on real corpora.
+# openai>=1.0           # LLM emoji annotator (idea a/c) via API
+# openai-whisper>=20231117  # ASR + word timestamps
+# soundfile>=0.12       # audio IO for SER
+# librosa>=0.10         # acoustic feature extraction fallback
