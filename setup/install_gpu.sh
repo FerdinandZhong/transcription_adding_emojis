@@ -46,17 +46,25 @@ fi
 # shellcheck disable=SC1091
 source "$VENV_DIR/bin/activate"
 
+# CDSW and some platforms export PIP_USER=1 globally; that breaks venv installs.
+unset PIP_USER PYTHONUSERBASE
+export PIP_NO_CACHE_DIR="${PIP_NO_CACHE_DIR:-1}"
+
+pip_install() {
+  python -m pip install --no-user "$@"
+}
+
 echo "==> Upgrading pip..."
-python -m pip install --upgrade pip setuptools wheel
+pip_install --upgrade pip setuptools wheel
 
 echo "==> Installing PyTorch (CUDA wheel)..."
-python -m pip install torch torchvision torchaudio --index-url "$TORCH_INDEX"
+pip_install torch torchvision torchaudio --index-url "$TORCH_INDEX"
 
 echo "==> Installing project dependencies..."
-python -m pip install -r "$ROOT/setup/requirements-gpu.txt"
+pip_install -r "$ROOT/setup/requirements-gpu.txt"
 
 echo "==> Installing emoji-asr package (editable)..."
-python -m pip install -e "$ROOT"
+pip_install -e "$ROOT"
 
 if [[ "${SKIP_VERIFY:-0}" != "1" ]]; then
   echo "==> Verifying environment..."

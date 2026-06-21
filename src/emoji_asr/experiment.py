@@ -15,8 +15,8 @@ from typing import Dict, List
 from .baselines.annotator_baseline import annotator_predict
 from .baselines.ser_mapping import ser_mapping_predict
 from .config import load_config
+from .data.loader import load_train_dev_test
 from .data.schema import Vocab
-from .data.synthetic import make_splits
 from .emoji_set import EmojiSet
 from .eval import evaluate_model, evaluate_predictions
 from .models.fusion_model import EmojiInsertionModel, ModelConfig
@@ -51,13 +51,7 @@ def run_experiment(config_path: str = None) -> Dict:
     cfg = load_config(config_path)
     set_seed(cfg.get("seed", 13))
     es = EmojiSet()
-    prosody_dim = cfg["model"].get("prosody_dim", 32)
-    sc = cfg["data"]["synthetic"]
-    train, dev, test = make_splits(
-        sc["n_train"], sc["n_dev"], sc["n_test"],
-        divergent_test_fraction=sc.get("divergent_test_fraction", 0.5),
-        prosody_dim=prosody_dim, seed=cfg.get("seed", 13), emoji_set=es,
-    )
+    train, dev, test = load_train_dev_test(cfg, emoji_set=es)
     vocab = Vocab.build(train)
     topk = max(cfg["eval"]["topk"])
 
@@ -119,7 +113,8 @@ def main():  # pragma: no cover - CLI
     args = ap.parse_args()
 
     out = run_experiment(args.config)
-    print("\n=== Results (synthetic) ===\n")
+    source = out["config"].get("data", {}).get("source", "synthetic")
+    print(f"\n=== Results ({source}) ===\n")
     print(render_table(out["results"]))
     if args.json:
         print("\n=== Full metrics ===\n")

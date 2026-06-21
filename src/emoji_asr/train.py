@@ -79,7 +79,7 @@ def build_model_from_cfg(cfg: Dict, vocab: Vocab, num_emoji: int) -> EmojiInsert
 
 def main():  # pragma: no cover - CLI
     from .config import load_config
-    from .data.synthetic import make_splits
+    from .data.loader import load_train_dev_test
     from .emoji_set import EmojiSet
     from .eval import evaluate_model
 
@@ -90,13 +90,7 @@ def main():  # pragma: no cover - CLI
     cfg = load_config(args.config)
     set_seed(cfg.get("seed", 13))
     es = EmojiSet()
-    sc = cfg["data"]["synthetic"]
-    train, dev, test = make_splits(
-        sc["n_train"], sc["n_dev"], sc["n_test"],
-        divergent_test_fraction=sc.get("divergent_test_fraction", 0.5),
-        prosody_dim=cfg["model"].get("prosody_dim", 32), seed=cfg.get("seed", 13),
-        emoji_set=es,
-    )
+    train, dev, test = load_train_dev_test(cfg, emoji_set=es)
     vocab = Vocab.build(train)
     model = build_model_from_cfg(cfg, vocab, es.num_emoji)
     tc = cfg["train"]

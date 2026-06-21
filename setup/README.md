@@ -130,6 +130,7 @@ train:
 | Issue | Fix |
 |---|---|
 | `CUDA not available` after install | Wrong `TORCH_CUDA` tag; reinstall with matching tag |
+| `Can not perform a '--user' install` in venv | CDSW sets `PIP_USER=1`; re-run `bash setup/install_gpu.sh` (script unsets it) or `unset PIP_USER` then pip with `--no-user` |
 | OOM during ModernBERT training | Lower `train.batch_size` to 8 or 4; use gradient accumulation later |
 | `ModernBERT not available` | Upgrade transformers: `pip install -U "transformers>=4.48"` |
 | Proxy errors for OpenAI annotator | Unset proxy vars before API calls |

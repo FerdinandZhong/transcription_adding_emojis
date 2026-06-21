@@ -1,0 +1,22 @@
+# MELD silver-label training (OpenAI annotator, prosody-conditioned).
+
+data:
+  source: jsonl
+  jsonl:
+    train: data/processed/meld_silver_openai/train.jsonl
+    dev: data/processed/meld_silver_openai/dev.jsonl
+    test: data/processed/meld_silver_openai/test.jsonl
+
+model:
+  text_encoder:
+    backend: hf
+    hf_model: answerdotai/ModernBERT-base
+
+train:
+  device: cuda
+  batch_size: 32
+  epochs: 15
+  out_dir: runs/meld_openai
+
+eval:
+  topk: [1, 3]
