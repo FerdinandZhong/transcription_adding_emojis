@@ -46,10 +46,22 @@ Uses `cai/jobs_config.yaml` and CDSW API env vars (`CDSW_APIV2_KEY`, `CDSW_DOMAI
 
 ## Local test (same entry script)
 
+**Prefer running as a Job** (`cai/run_training_job.py`). In an interactive session:
+
 ```bash
 cd /home/cdsw/transcription_adding_emojis
 TRAIN_MODE=train python cai/run_training_job.py
 ```
+
+If you paste into a **notebook cell** (no `__file__`), set the project root explicitly:
+
+```python
+import os
+os.environ["PROJECT_ROOT"] = "/home/cdsw/transcription_adding_emojis"
+# then: exec(open("cai/run_training_job.py").read())
+```
+
+Or from the repo root in a terminal — not `%run` on copied fragments without `PROJECT_ROOT`.
 
 ## Logs
 

@@ -29,9 +29,26 @@ def _truthy(name: str, default: str = "false") -> bool:
 
 
 def project_root() -> Path:
-    if os.environ.get("CDSW_PROJECT_ROOT"):
-        return Path(os.environ["CDSW_PROJECT_ROOT"]).resolve()
-    return Path(__file__).resolve().parents[1]
+    """Resolve repo root in Jobs, CLI, and Jupyter (where ``__file__`` is absent)."""
+    for key in ("PROJECT_ROOT", "CDSW_PROJECT_ROOT"):
+        val = os.environ.get(key, "").strip()
+        if val:
+            return Path(val).resolve()
+
+    try:
+        return Path(__file__).resolve().parents[1]
+    except NameError:
+        pass
+
+    cwd = Path.cwd().resolve()
+    for candidate in (cwd, *cwd.parents):
+        if (candidate / "setup" / "install_gpu.sh").is_file() and (candidate / "pyproject.toml").is_file():
+            return candidate
+
+    default = Path("/home/cdsw/transcription_adding_emojis")
+    if default.is_dir():
+        return default.resolve()
+    return cwd
 
 
 def maybe_git_lfs_pull(root: Path) -> None:
