@@ -101,6 +101,20 @@ python setup/verify_env.py
 
 ## Training commands (after setup)
 
+### CAI Job (recommended on Workbench)
+
+Use **`cai/run_training_job.py`** as the Job script — it bootstraps `.venv` and runs training
+(no manual `source .venv/bin/activate`). See [`cai/README.md`](../cai/README.md).
+
+```
+Script:   cai/run_training_job.py
+Runtime:  GPU CUDA (e.g. ml-runtime-pbj-workbench-python3.10-cuda)
+GPU:      1
+Env:      TRAIN_MODE=train, TRAIN_CONFIG=configs/meld_openai.yaml
+```
+
+### Interactive session
+
 Synthetic sanity check (no external data):
 
 ```bash

@@ -1,0 +1,45 @@
+# CAI Workbench job definitions for emoji-asr GPU training.
+#
+# Create/update via UI, or run (with CDSW_APIV2_KEY + CDSW_DOMAIN + CDSW_PROJECT_ID):
+#   python cai/create_jobs.py
+#
+# Primary entry script (relative to project root):
+#   cai/run_training_job.py
+
+runtime_identifier: &gpu_runtime "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-workbench-python3.10-cuda:2026.01.1-b6"
+
+jobs:
+  setup_and_train_meld:
+    name: "Emoji-ASR — train ModernBERT on MELD"
+    description: >-
+      Bootstrap .venv (PyTorch CUDA + deps) and train the fusion model on
+      meld_silver_openai JSONL. Handles venv internally — no manual activate.
+    script: "cai/run_training_job.py"
+    kernel: "python3"
+    cpu: 8
+    memory: 32
+    gpu: 1
+    timeout: 86400  # 24 hours
+    runtime_identifier: *gpu_runtime
+    environment:
+      TRAIN_MODE: "train"
+      TRAIN_CONFIG: "configs/meld_openai.yaml"
+      TORCH_CUDA: "cu124"
+      FORCE_REINSTALL: "false"
+      SKIP_SETUP: "false"
+
+  full_experiment_meld:
+    name: "Emoji-ASR — full experiment (fusion + baselines)"
+    description: >-
+      Same venv bootstrap, then run experiment.py (fusion, text-only, baselines).
+    script: "cai/run_training_job.py"
+    kernel: "python3"
+    cpu: 8
+    memory: 32
+    gpu: 1
+    timeout: 86400
+    runtime_identifier: *gpu_runtime
+    environment:
+      TRAIN_MODE: "experiment"
+      TRAIN_CONFIG: "configs/meld_openai.yaml"
+      TORCH_CUDA: "cu124"
