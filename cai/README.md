@@ -66,4 +66,12 @@ Or from the repo root in a terminal — not `%run` on copied fragments without `
 ## Logs
 
 Job stdout shows venv bootstrap (`install_gpu.sh`) then epoch losses / metrics.
-Artifacts go under `runs/meld_openai/` and `outputs/meld_openai/` per config.
+After training, weights are saved under ``train.out_dir`` (default ``runs/meld_openai/``):
+
+```
+runs/meld_openai/
+  checkpoint.pt    # model weights + vocab + config snapshot
+  config.yaml      # copy of training config
+  metrics.json     # test-set summary metrics
+  history.json     # per-epoch train loss
+```

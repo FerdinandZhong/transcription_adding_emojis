@@ -15,8 +15,9 @@ model:
 train:
   device: cuda
   batch_size: 32
-  epochs: 15
+  epochs: 30          # loss was still falling at 15; increase if dev metrics plateau late
   out_dir: runs/meld_openai
+  checkpoint: checkpoint.pt
 
 eval:
   topk: [1, 3]
