@@ -20,14 +20,42 @@ from .data.schema import Vocab
 from .emoji_set import EmojiSet
 from .eval import evaluate_model, evaluate_predictions
 from .models.fusion_model import EmojiInsertionModel, ModelConfig
-from .train import train_model
+from .train import load_checkpoint, save_checkpoint, train_model
 from .utils import get_device, set_seed
 
 GROUPS = ("all", "congruent", "divergent")
 
 
-def _train_eval(cfg, train, dev, test, vocab, es, use_prosody, fusion):
+def _resolve_path(cfg: Dict, key: str):
+    from pathlib import Path
+    tc = cfg.get("train", {})
+    val = tc.get(key, "")
+    if not val:
+        return None
+    p = Path(val)
+    if not p.is_absolute():
+        root = Path(__file__).resolve().parents[2]
+        p = (root / p).resolve()
+    return p if p.is_file() else None
+
+
+def _train_eval(cfg, train, dev, test, vocab, es, use_prosody, fusion,
+                *, label: str, checkpoint_key: str):
     device = get_device(cfg["train"].get("device", "auto"))
+    topk = max(cfg["eval"]["topk"])
+    ckpt_path = _resolve_path(cfg, checkpoint_key)
+
+    if ckpt_path is not None:
+        print(f"[{label}] loading checkpoint: {ckpt_path}")
+        model, ckpt_vocab, meta = load_checkpoint(ckpt_path, device=device)
+        if len(ckpt_vocab) != len(vocab):
+            print(f"[WARN] {label}: vocab size mismatch (ckpt={len(ckpt_vocab)}, "
+                  f"data={len(vocab)}); using checkpoint vocab")
+            vocab = ckpt_vocab
+        if meta.get("metrics"):
+            print(f"[{label}] checkpoint metrics: {meta['metrics']}")
+        return evaluate_model(model, test, vocab, es, device=device, topk=topk)
+
     m = cfg["model"]
     mc = ModelConfig(
         num_emoji=es.num_emoji, vocab_size=len(vocab),
@@ -43,8 +71,17 @@ def _train_eval(cfg, train, dev, test, vocab, es, use_prosody, fusion):
                 insertion_weight=tc.get("insertion_loss_weight", 1.0),
                 emoji_weight=tc.get("emoji_loss_weight", 1.0), device=device,
                 seed=cfg.get("seed", 13), verbose=False)
-    return evaluate_model(model, test, vocab, es, device=device,
-                          topk=max(cfg["eval"]["topk"]))
+    metrics = evaluate_model(model, test, vocab, es, device=device, topk=topk)
+    out_dir = tc.get("out_dir", "runs/default")
+    save_key = "fusion_save_as" if use_prosody else "text_only_save_as"
+    default_name = "fusion_checkpoint.pt" if use_prosody else "text_only_checkpoint.pt"
+    ckpt_name = tc.get(save_key, default_name)
+    summary = {g: {"placement_f1": metrics[g]["placement"]["f1"],
+                   "emoji_top1": metrics[g]["emoji"]["top1"],
+                   "semantics_preservation": metrics[g]["emoji"]["semantics_preservation"]}
+               for g in GROUPS}
+    save_checkpoint(out_dir, model, vocab, cfg, metrics=summary, filename=ckpt_name)
+    return metrics
 
 
 def run_experiment(config_path: str = None) -> Dict:
@@ -76,12 +113,16 @@ def run_experiment(config_path: str = None) -> Dict:
         for g in GROUPS
     }
 
-    # Trained models.
-    results["text_only (learned)"] = _train_eval(cfg, train, dev, test, vocab, es,
-                                                  use_prosody=False, fusion="none")
-    results["fusion (ours)"] = _train_eval(cfg, train, dev, test, vocab, es,
-                                           use_prosody=True,
-                                           fusion=cfg["model"].get("fusion", "cross_attention"))
+    # Trained models (optional checkpoints skip re-training).
+    results["text_only (learned)"] = _train_eval(
+        cfg, train, dev, test, vocab, es, use_prosody=False, fusion="none",
+        label="text_only", checkpoint_key="text_only_checkpoint",
+    )
+    results["fusion (ours)"] = _train_eval(
+        cfg, train, dev, test, vocab, es, use_prosody=True,
+        fusion=cfg["model"].get("fusion", "cross_attention"),
+        label="fusion", checkpoint_key="fusion_checkpoint",
+    )
     return {"results": results, "config": cfg}
 
 

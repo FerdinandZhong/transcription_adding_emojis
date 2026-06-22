@@ -43,3 +43,20 @@ jobs:
       TRAIN_MODE: "experiment"
       TRAIN_CONFIG: "configs/meld_openai.yaml"
       TORCH_CUDA: "cu124"
+
+  paper_eval_meld:
+    name: "Emoji-ASR — paper table (load B1 fusion + train text-only)"
+    description: >-
+      Load fusion checkpoint from B1 training; train text-only ablation; run all baselines.
+    script: "cai/run_training_job.py"
+    kernel: "python3"
+    cpu: 8
+    memory: 32
+    gpu: 1
+    timeout: 86400
+    runtime_identifier: *gpu_runtime
+    environment:
+      TRAIN_MODE: "evaluate"
+      TRAIN_CONFIG: "configs/meld_paper_eval.yaml"
+      OUTPUT_DIR: "outputs/meld_paper"
+      TORCH_CUDA: "cu124"

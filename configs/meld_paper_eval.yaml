@@ -1,0 +1,26 @@
+# Phase 2 paper experiment: load B1 fusion checkpoint, train text-only, run baselines.
+
+data:
+  source: jsonl
+  jsonl:
+    train: data/processed/meld_silver_openai/train.jsonl
+    dev: data/processed/meld_silver_openai/dev.jsonl
+    test: data/processed/meld_silver_openai/test.jsonl
+
+model:
+  text_encoder:
+    backend: hf
+    hf_model: answerdotai/ModernBERT-base
+
+train:
+  device: cuda
+  batch_size: 32
+  epochs: 30
+  out_dir: runs/meld_openai
+  # B1 — your 30-epoch fusion run (skip re-training)
+  fusion_checkpoint: runs/meld_openai/checkpoint.pt
+  # text-only ablation trained fresh; saved here after experiment
+  text_only_save_as: text_only_checkpoint.pt
+
+eval:
+  topk: [1, 3]
