@@ -61,11 +61,15 @@ def load_meld_split(csv_path: str, audio_dir: Optional[str] = None,
                     prosody_dim: int = 32, seed: int = 13,
                     max_rows: Optional[int] = None,
                     mark_divergent: bool = True,
-                    start_row: int = 0) -> List[Example]:
+                    start_row: int = 0,
+                    prosody_extractor=None) -> List[Example]:
     """Load one MELD split CSV into silver-labeled examples.
 
-    If ``audio_dir`` and an audio-capable SER backend are provided, prosody comes from
-    real speech; otherwise a VAD prior derived from the gold emotion label is used.
+    If ``prosody_extractor`` (a
+    :class:`~emoji_asr.data.prosody.WordProsodyExtractor`) and per-utterance audio are
+    available, prosody comes from *real speech* and the emotion-prior fallback is used
+    only when audio is missing or unreadable. Without an extractor, prosody is a VAD
+    prior derived from the gold emotion label (offline default).
     """
     import pandas as pd
 
@@ -89,8 +93,22 @@ def load_meld_split(csv_path: str, audio_dir: Optional[str] = None,
         uid_ = int(row.get("Utterance_ID", 0))
         uid = f"meld-{did}-{uid_}"
         audio_path = _resolve_meld_audio_path(audio_dir, did, uid_)
-        prosody = _prosody_from_emotion(emotion, len(words), prosody_dim, rng)
-        ex = labeler.label(uid, words, prosody, audio_path=audio_path, emotion=emotion)
+
+        real_prosody = False
+        prosody = None
+        if prosody_extractor is not None and audio_path is not None:
+            try:
+                prosody = prosody_extractor.extract(audio_path, words)
+                real_prosody = prosody.shape[0] == len(words)
+            except Exception as exc:  # missing/corrupt audio -> documented fallback
+                print(f"[prosody] {uid}: audio extraction failed ({exc}); using emotion prior",
+                      flush=True)
+                real_prosody = False
+        if not real_prosody:
+            prosody = _prosody_from_emotion(emotion, len(words), prosody_dim, rng)
+        ex = labeler.label(uid, words, prosody, audio_path=audio_path, emotion=emotion,
+                           overwrite_vad=not real_prosody)
+        ex.meta["real_prosody"] = bool(real_prosody)
         if mark_divergent:
             speech_emotion = str(ex.meta.get("ser_emotion", emotion))
             ex.divergent = speech_emotion != "neutral" and (not _has_text_emotion(words))
@@ -111,7 +129,8 @@ def load_meld_splits(split_csv_paths: Dict[str, str],
                      emoji_set: Optional[EmojiSet] = None,
                      prosody_dim: int = 32, seed: int = 13,
                      max_rows_per_split: Optional[int] = None,
-                     mark_divergent: bool = True) -> Dict[str, List[Example]]:
+                     mark_divergent: bool = True,
+                     prosody_extractor=None) -> Dict[str, List[Example]]:
     """Load multiple MELD splits with consistent settings."""
     out: Dict[str, List[Example]] = {}
     for split, csv_path in split_csv_paths.items():
@@ -125,6 +144,7 @@ def load_meld_splits(split_csv_paths: Dict[str, str],
             seed=seed,
             max_rows=max_rows_per_split,
             mark_divergent=mark_divergent,
+            prosody_extractor=prosody_extractor,
         )
     return out
 

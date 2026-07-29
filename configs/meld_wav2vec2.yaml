@@ -1,0 +1,25 @@
+# MELD real-audio re-run: wav2vec2 word-level prosody + OpenAI annotator (fusion model).
+# Replaces meld_openai.yaml, whose prosody was a gold-emotion prior (heuristic SER).
+
+data:
+  source: jsonl
+  jsonl:
+    train: data/processed/meld_silver_wav2vec2/train.jsonl
+    dev: data/processed/meld_silver_wav2vec2/dev.jsonl
+    test: data/processed/meld_silver_wav2vec2/test.jsonl
+
+model:
+  type: fusion
+  text_encoder:
+    backend: hf
+    hf_model: answerdotai/ModernBERT-base
+
+train:
+  device: auto          # MPS on Apple Silicon (no CUDA here)
+  batch_size: 32
+  epochs: 30
+  out_dir: runs/meld_wav2vec2
+  checkpoint: checkpoint.pt
+
+eval:
+  topk: [1, 3]

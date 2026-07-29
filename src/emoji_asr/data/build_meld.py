@@ -123,6 +123,13 @@ def build_meld_dataset(
     """
     emoji_set = EmojiSet()
     ser = build_ser(backend=ser_backend, wav2vec2_model=wav2vec2_model)
+    # When a real audio SER backend is selected, build a word-level prosody extractor so
+    # prosody is derived from speech (not the gold-emotion VAD prior). See
+    # ``emoji_asr.data.prosody.WordProsodyExtractor``.
+    prosody_extractor = None
+    if ser_backend == "wav2vec2":
+        from .prosody import WordProsodyExtractor
+        prosody_extractor = WordProsodyExtractor(ser=ser, prosody_dim=prosody_dim)
     annotator = build_annotator(
         annotator=annotator_name,
         emoji_set=emoji_set,
@@ -228,6 +235,7 @@ def build_meld_dataset(
                     max_rows=take,
                     mark_divergent=True,
                     start_row=processed,
+                    prosody_extractor=prosody_extractor,
                 )
                 if not chunk:
                     break
@@ -247,7 +255,13 @@ def build_meld_dataset(
         # compute stats from final saved split
         examples = load_jsonl(out_path)
         summary["files"][split] = out_path
-        summary["split_stats"][split] = split_stats(examples)
+        stats = split_stats(examples)
+        # Record how many utterances actually used audio-derived (real) prosody vs the
+        # gold-emotion VAD prior, so a build self-documents its prosody provenance.
+        n_real = sum(1 for ex in examples if bool(getattr(ex, "meta", {}).get("real_prosody")))
+        stats["real_prosody"] = n_real
+        stats["real_prosody_frac"] = round(n_real / max(len(examples), 1), 4)
+        summary["split_stats"][split] = stats
         progress["splits"][split]["status"] = "completed"
         progress["splits"][split]["processed"] = len(examples)
         progress["splits"][split]["stats"] = summary["split_stats"][split]

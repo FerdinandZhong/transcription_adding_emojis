@@ -1,3 +1,4 @@
 # Git LFS — large datasets and processed silver-label files
 datasets/** filter=lfs diff=lfs merge=lfs -text
 data/processed/meld_silver_openai/** filter=lfs diff=lfs merge=lfs -text
+data/processed/meld_silver_wav2vec2/** filter=lfs diff=lfs merge=lfs -text

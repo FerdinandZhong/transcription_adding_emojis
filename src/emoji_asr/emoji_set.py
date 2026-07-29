@@ -87,7 +87,7 @@ _ENTRIES: List[EmojiEntry] = [
     EmojiEntry("😠", "angry", "anger", -0.6, 0.6),
     EmojiEntry("😡", "rage", "anger", -0.75, 0.8),
     EmojiEntry("🤬", "cursing", "anger", -0.8, 0.85),
-    EmojiEntry("😤", "huffing", "anger", -0.4, 0.55),
+    EmojiEntry("😩", "weary", "anger", -0.4, 0.55),
     EmojiEntry("👿", "imp", "anger", -0.7, 0.6),
     # fear
     EmojiEntry("😨", "fearful", "fear", -0.6, 0.7),
