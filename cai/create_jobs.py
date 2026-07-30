@@ -78,7 +78,7 @@ def _job_payload(cfg: Dict[str, Any]) -> Dict[str, Any]:
         "timeout": cfg.get("timeout", 3600),
     }
     if cfg.get("gpu") is not None:
-        payload["gpu"] = cfg["gpu"]
+        payload["nvidia_gpu"] = cfg["gpu"]
     if cfg.get("runtime_identifier"):
         payload["runtime_identifier"] = cfg["runtime_identifier"].replace("\n", "").replace(" ", "")
     if cfg.get("environment"):
