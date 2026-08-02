@@ -46,6 +46,29 @@ def _list_jobs(client: requests.Session, domain: str, project_id: str) -> Dict[s
     return {j["name"]: j["id"] for j in resp.json().get("jobs", [])}
 
 
+def print_cuda_runtimes(client: requests.Session, domain: str) -> None:
+    """List available CUDA runtime identifiers so a stale one can be corrected.
+
+    A runtime_identifier not registered in the workspace is the most common cause of a
+    500 on job creation. Update jobs_config.yaml's `runtime_identifier` to one of these.
+    """
+    try:
+        resp = client.get(f"{domain}/api/v2/runtimes", params={"page_size": 500})
+        resp.raise_for_status()
+        runtimes = resp.json().get("runtimes", [])
+    except Exception as exc:
+        print(f"  (could not list runtimes: {exc})")
+        return
+    cuda = sorted({r.get("image_identifier", "") for r in runtimes
+                   if "cuda" in r.get("image_identifier", "").lower()})
+    if not cuda:
+        print("  No CUDA runtimes found in this workspace.")
+        return
+    print("  Available CUDA runtime_identifiers:")
+    for img in cuda:
+        print(f"    {img}")
+
+
 def _job_payload(cfg: Dict[str, Any]) -> Dict[str, Any]:
     payload = {
         "name": cfg["name"],
@@ -55,7 +78,7 @@ def _job_payload(cfg: Dict[str, Any]) -> Dict[str, Any]:
         "timeout": cfg.get("timeout", 3600),
     }
     if cfg.get("gpu") is not None:
-        payload["gpu"] = cfg["gpu"]
+        payload["nvidia_gpu"] = cfg["gpu"]
     if cfg.get("runtime_identifier"):
         payload["runtime_identifier"] = cfg["runtime_identifier"].replace("\n", "").replace(" ", "")
     if cfg.get("environment"):
@@ -77,20 +100,35 @@ def _create_or_update(
     if name in existing:
         job_id = existing[name]
         print(f"Updating job {key!r} ({job_id})")
-        client.patch(f"{url}/{job_id}", json=payload).raise_for_status()
+        resp = client.patch(f"{url}/{job_id}", json=payload)
     else:
         print(f"Creating job {key!r}")
         resp = client.post(url, json=payload)
-        resp.raise_for_status()
+
+    if not resp.ok:
+        # Surface the API's error body — a bare raise_for_status() hides the reason
+        # (e.g. an unavailable runtime_identifier returns 500 with a JSON message).
+        print(f"  FAILED {resp.status_code} for {key!r}")
+        print(f"  response: {resp.text[:800]}")
+        print(f"  payload runtime_identifier: {payload.get('runtime_identifier')}")
+        return False
+    if not (name in existing):
         print(f"  created id={resp.json().get('id')}")
+    return True
 
 
 def main() -> None:
     client, domain, project_id = _client()
     config = _load_config()
     existing = _list_jobs(client, domain, project_id)
+    any_failed = False
     for key, cfg in (config.get("jobs") or {}).items():
-        _create_or_update(client, domain, project_id, key, cfg, existing)
+        ok = _create_or_update(client, domain, project_id, key, cfg, existing)
+        any_failed = any_failed or not ok
+    if any_failed:
+        print("\nSome jobs failed. If the error mentions the runtime, pick a valid tag below "
+              "and update runtime_identifier in cai/jobs_config.yaml:")
+        print_cuda_runtimes(client, domain)
     print("\nDone. Run a job from the CAI Jobs UI or API.")
 
 

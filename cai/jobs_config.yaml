@@ -44,6 +44,39 @@ jobs:
       TRAIN_CONFIG: "configs/meld_openai.yaml"
       TORCH_CUDA: "cu124"
 
+  train_fusion_wav2vec2:
+    name: "Emoji-ASR — fusion (wav2vec2 real prosody)"
+    description: >-
+      Train the fusion model on the real-audio wav2vec2 dataset
+      (meld_silver_wav2vec2 JSONL). Replaces the heuristic gold-emotion-prior run.
+    script: "cai/run_training_job.py"
+    kernel: "python3"
+    cpu: 8
+    memory: 32
+    gpu: 1
+    timeout: 86400
+    runtime_identifier: *gpu_runtime
+    environment:
+      TRAIN_MODE: "train"
+      TRAIN_CONFIG: "configs/meld_wav2vec2.yaml"
+      TORCH_CUDA: "cu124"
+
+  train_textonly_wav2vec2:
+    name: "Emoji-ASR — text-only ablation (wav2vec2 dataset)"
+    description: >-
+      Matched text-only control (prosody disabled) on the same real-audio dataset.
+    script: "cai/run_training_job.py"
+    kernel: "python3"
+    cpu: 8
+    memory: 32
+    gpu: 1
+    timeout: 86400
+    runtime_identifier: *gpu_runtime
+    environment:
+      TRAIN_MODE: "train"
+      TRAIN_CONFIG: "configs/meld_wav2vec2_textonly.yaml"
+      TORCH_CUDA: "cu124"
+
   paper_eval_meld:
     name: "Emoji-ASR — paper table (load B1 fusion + train text-only)"
     description: >-

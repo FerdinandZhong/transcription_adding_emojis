@@ -1,0 +1,25 @@
+# MELD real-audio re-run: text-only ablation (prosody stream disabled, identical recipe).
+# Matched control for meld_wav2vec2.yaml.
+
+data:
+  source: jsonl
+  jsonl:
+    train: data/processed/meld_silver_wav2vec2/train.jsonl
+    dev: data/processed/meld_silver_wav2vec2/dev.jsonl
+    test: data/processed/meld_silver_wav2vec2/test.jsonl
+
+model:
+  type: text_only       # disables prosody encoder + fusion (use_prosody=false)
+  text_encoder:
+    backend: hf
+    hf_model: answerdotai/ModernBERT-base
+
+train:
+  device: auto
+  batch_size: 32
+  epochs: 30
+  out_dir: runs/meld_wav2vec2
+  checkpoint: text_only_checkpoint.pt
+
+eval:
+  topk: [1, 3]

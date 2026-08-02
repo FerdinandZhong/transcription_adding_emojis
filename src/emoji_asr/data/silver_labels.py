@@ -31,28 +31,38 @@ class SilverLabeler:
 
     def label(self, uid: str, words: List[str], prosody: np.ndarray,
               audio_path: Optional[str] = None, emotion: str = "neutral",
-              divergent: bool = False) -> Example:
+              divergent: bool = False, overwrite_vad: bool = True) -> Example:
         """Label one utterance whose words and word-level prosody are already known.
 
         ``prosody`` feeds the SER backend (heuristic reads its VAD dims); for real audio
         provide ``audio_path`` and use ``Wav2Vec2SER`` instead.
+
+        When ``prosody`` already carries genuine per-word VAD from an audio extractor
+        (:class:`~emoji_asr.data.prosody.WordProsodyExtractor`), pass
+        ``overwrite_vad=False`` so the per-word acoustic values are preserved rather than
+        replaced by a single utterance-level VAD. The emotion used to condition the
+        annotator is then pooled from that real prosody via ``predict_from_prosody``.
         """
-        if audio_path is not None and hasattr(self.ser, "predict_from_audio"):
-            try:
-                ser_out = self.ser.predict_from_audio(audio_path)
-            except NotImplementedError:
-                ser_out = self.ser.predict_from_prosody(prosody)
-        else:
-            ser_out = self.ser.predict_from_prosody(prosody)
-        # Keep the word-level prosody stream aligned with the detected speech state.
-        # This lets audio-backed SER influence both labeling and model input features.
         prosody = np.asarray(prosody, dtype=np.float32).copy()
         if prosody.ndim != 2 or prosody.shape[0] != len(words):
             raise ValueError(f"{uid}: invalid prosody shape {prosody.shape}, expected [T, D]")
-        if prosody.shape[1] >= 3:
-            prosody[:, 0] = ser_out.valence
-            prosody[:, 1] = ser_out.arousal
-            prosody[:, 2] = ser_out.dominance
+
+        if not overwrite_vad:
+            # Real per-word VAD already present; derive the conditioning emotion from it.
+            ser_out = self.ser.predict_from_prosody(prosody)
+        else:
+            if audio_path is not None and hasattr(self.ser, "predict_from_audio"):
+                try:
+                    ser_out = self.ser.predict_from_audio(audio_path)
+                except NotImplementedError:
+                    ser_out = self.ser.predict_from_prosody(prosody)
+            else:
+                ser_out = self.ser.predict_from_prosody(prosody)
+            # Keep the word-level prosody stream aligned with the detected speech state.
+            if prosody.shape[1] >= 3:
+                prosody[:, 0] = ser_out.valence
+                prosody[:, 1] = ser_out.arousal
+                prosody[:, 2] = ser_out.dominance
         ann = self.annotator.annotate(words, ser=ser_out)
         return Example(uid=uid, words=words, prosody=prosody,
                        insertion=ann.insertion, emoji_ids=ann.emoji_ids,
