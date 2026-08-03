@@ -55,15 +55,30 @@ fixed map, UX study); multimodal ERC + datasets; semantics-preserving evaluation
 - Losses: class-balanced BCE for insertion, cross-entropy for emoji at gold positions.
 - Implemented by `models/fusion_model.py`.
 
-## 6. Experiments
-- Methods: ours (fusion); ablation text-only; Speejis SER-mapping; LLM annotator (a)/(c);
-  [real runs] Whisper end-to-end fine-tune; audio-LLM prompting.
-- Metrics: placement P/R/F1; emoji top-k; macro-F1; **semantics preservation**;
-  **emotion fidelity**; reported for all / congruent / **divergent** groups.
-- Headline: multimodal gain on the divergent subset (prosody recovers lost emotion).
-- Synthetic harness reproduces the mechanism end-to-end (`outputs/results.md`):
-  fusion 0.986 semantics-preservation on divergent vs 0.102 text-only; placement F1 0.705
-  vs 0.444; UX preference 85.75%.
+## 6. Experiments & Results
+
+Full draft prose: [`results_section.md`](results_section.md).
+
+- Setup: MELD silver-label split (9,989 / 1,109 / 2,610); ModernBERT-base; 30 epochs;
+  fusion checkpoint (B1) + freshly trained text-only ablation; zero-shot Speejis + offline
+  LLM baselines.
+- Metrics: placement P/R/F1; emoji top-1; semantics preservation; emotion fidelity;
+  stratified all / congruent / **divergent** (45.4% of test).
+- Headline (real MELD): fusion divergent SemPres **0.898** vs text-only **0.383**; Top1
+  **0.757** vs **0.330**; EmoFidelity **0.915** vs **0.367**. Placement F1 fusion **0.424**
+  vs text-only 0.413 (fusion leads on both sub-tasks).
+- Synthetic harness (development only): fusion 0.986 SemPres (divergent) vs 0.102 text-only.
+
+**Table 1.** MELD silver-label test results.
+
+| Method | Place F1 (all) | Top1 (all) | Top1 (congruent) | Top1 (divergent) | SemPres (divergent) | EmoFidelity (divergent) |
+|---|---:|---:|---:|---:|---:|---:|
+| ser_mapping (Speejis) | 0.321 | 0.097 | 0.022 | 0.131 | 0.298 | 0.280 |
+| llm_text_only (idea a) | 0.029 | 0.004 | 0.013 | 0.000 | 0.084 | 0.000 |
+| llm_fusion (idea c) | 0.309 | 0.096 | 0.019 | 0.131 | 0.298 | 0.280 |
+| text_only (learned) | 0.413 | 0.334 | 0.342 | 0.330 | 0.383 | 0.367 |
+| fusion (ours) | 0.424 | 0.760 | 0.766 | 0.757 | 0.898 | 0.915 |
+
 
 ## 7. Human Evaluation
 - Speejis-style A/B: plain vs augmented transcript; expressiveness (1-7) + preference.
@@ -80,3 +95,10 @@ fixed map, UX study); multimodal ERC + datasets; semantics-preserving evaluation
 ## Reproducibility checklist
 - Configs in `configs/`; deterministic seeds; offline synthetic harness; unit tests;
   real-corpus adapters and pretrained-model backends documented in the README.
+
+## Project status
+See [`project_summary.md`](project_summary.md) for a detailed log of completed work,
+artifact paths, and the prioritized next-step plan.
+
+## Full draft
+Working manuscript (Intro + Method + Results integrated): [`paper_draft.md`](paper_draft.md).
